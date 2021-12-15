@@ -1,0 +1,98 @@
+Create Layer Graph
+Create the layer graph variable to contain the network layers.
+lgraph = layerGraph();
+
+Add Layer Branches
+Add the branches of the network to the layer graph. Each branch is a linear array of layers.
+tempLayers = [
+    image3dInputLayer([32 32 32 1],"Name","ImageInputLayer")
+    convolution3dLayer([3 3 3],16,"Name","Encoder-Stage-1-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Encoder-Stage-1-BN-1")
+    reluLayer("Name","Encoder-Stage-1-ReLU-1")
+    convolution3dLayer([3 3 3],32,"Name","Encoder-Stage-1-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Encoder-Stage-1-BN-2")
+    reluLayer("Name","Encoder-Stage-1-ReLU-2")];
+lgraph = addLayers(lgraph,tempLayers);
+
+tempLayers = [
+    maxPooling3dLayer([2 2 2],"Name","Encoder-Stage-1-MaxPool","Stride",[2 2 2])
+    convolution3dLayer([3 3 3],32,"Name","Encoder-Stage-2-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Encoder-Stage-2-BN-1")
+    reluLayer("Name","Encoder-Stage-2-ReLU-1")
+    convolution3dLayer([3 3 3],64,"Name","Encoder-Stage-2-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Encoder-Stage-2-BN-2")
+    reluLayer("Name","Encoder-Stage-2-ReLU-2")];
+lgraph = addLayers(lgraph,tempLayers);
+
+tempLayers = [
+    maxPooling3dLayer([2 2 2],"Name","Encoder-Stage-2-MaxPool","Stride",[2 2 2])
+    convolution3dLayer([3 3 3],64,"Name","Encoder-Stage-3-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Encoder-Stage-3-BN-1")
+    reluLayer("Name","Encoder-Stage-3-ReLU-1")
+    convolution3dLayer([3 3 3],128,"Name","Encoder-Stage-3-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Encoder-Stage-3-BN-2")
+    reluLayer("Name","Encoder-Stage-3-ReLU-2")];
+lgraph = addLayers(lgraph,tempLayers);
+
+tempLayers = [
+    maxPooling3dLayer([2 2 2],"Name","Encoder-Stage-3-MaxPool","Stride",[2 2 2])
+    convolution3dLayer([3 3 3],128,"Name","Bridge-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Bridge-BN-1")
+    reluLayer("Name","Bridge-ReLU-1")
+    convolution3dLayer([3 3 3],256,"Name","Bridge-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Bridge-BN-2")
+    reluLayer("Name","Bridge-ReLU-2")
+    transposedConv3dLayer([2 2 2],256,"Name","Decoder-Stage-1-UpConv","BiasLearnRateFactor",2,"Stride",[2 2 2],"WeightsInitializer","he")];
+lgraph = addLayers(lgraph,tempLayers);
+
+tempLayers = [
+    concatenationLayer(4,2,"Name","Decoder-Stage-1-Concatenation")
+    convolution3dLayer([3 3 3],128,"Name","Decoder-Stage-1-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Decoder-Stage-1-BN-1")
+    reluLayer("Name","Decoder-Stage-1-ReLU-1")
+    convolution3dLayer([3 3 3],128,"Name","Decoder-Stage-1-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Decoder-Stage-1-BN-2")
+    reluLayer("Name","Decoder-Stage-1-ReLU-2")
+    transposedConv3dLayer([2 2 2],128,"Name","Decoder-Stage-2-UpConv","BiasLearnRateFactor",2,"Stride",[2 2 2],"WeightsInitializer","he")];
+lgraph = addLayers(lgraph,tempLayers);
+
+tempLayers = [
+    concatenationLayer(4,2,"Name","Decoder-Stage-2-Concatenation")
+    convolution3dLayer([3 3 3],64,"Name","Decoder-Stage-2-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Decoder-Stage-2-BN-1")
+    reluLayer("Name","Decoder-Stage-2-ReLU-1")
+    convolution3dLayer([3 3 3],64,"Name","Decoder-Stage-2-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Decoder-Stage-2-BN-2")
+    reluLayer("Name","Decoder-Stage-2-ReLU-2")
+    transposedConv3dLayer([2 2 2],64,"Name","Decoder-Stage-3-UpConv","BiasLearnRateFactor",2,"Stride",[2 2 2],"WeightsInitializer","he")];
+lgraph = addLayers(lgraph,tempLayers);
+
+tempLayers = [
+    concatenationLayer(4,2,"Name","Decoder-Stage-3-Concatenation")
+    convolution3dLayer([3 3 3],32,"Name","Decoder-Stage-3-Conv-1","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Decoder-Stage-3-BN-1")
+    reluLayer("Name","Decoder-Stage-3-ReLU-1")
+    convolution3dLayer([3 3 3],32,"Name","Decoder-Stage-3-Conv-2","Padding","same","WeightsInitializer","he")
+    batchNormalizationLayer("Name","Decoder-Stage-3-BN-2")
+    reluLayer("Name","Decoder-Stage-3-ReLU-2")
+    convolution3dLayer([1 1 1],2,"Name","Final-ConvolutionLayer","Padding","same","WeightsInitializer","he")
+    regressionLayer("Name","regressionoutput")];
+lgraph = addLayers(lgraph,tempLayers);
+
+% clean up helper variable
+clear tempLayers;
+
+Connect Layer Branches
+Connect all the branches of the network to create the network graph.
+lgraph = connectLayers(lgraph,"Encoder-Stage-1-ReLU-2","Encoder-Stage-1-MaxPool");
+lgraph = connectLayers(lgraph,"Encoder-Stage-1-ReLU-2","Decoder-Stage-3-Concatenation/in2");
+lgraph = connectLayers(lgraph,"Encoder-Stage-2-ReLU-2","Encoder-Stage-2-MaxPool");
+lgraph = connectLayers(lgraph,"Encoder-Stage-2-ReLU-2","Decoder-Stage-2-Concatenation/in2");
+lgraph = connectLayers(lgraph,"Encoder-Stage-3-ReLU-2","Encoder-Stage-3-MaxPool");
+lgraph = connectLayers(lgraph,"Encoder-Stage-3-ReLU-2","Decoder-Stage-1-Concatenation/in2");
+lgraph = connectLayers(lgraph,"Decoder-Stage-1-UpConv","Decoder-Stage-1-Concatenation/in1");
+lgraph = connectLayers(lgraph,"Decoder-Stage-2-UpConv","Decoder-Stage-2-Concatenation/in1");
+lgraph = connectLayers(lgraph,"Decoder-Stage-3-UpConv","Decoder-Stage-3-Concatenation/in1");
+
+Plot Layers
+plot(lgraph);
